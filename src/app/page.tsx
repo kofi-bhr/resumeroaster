@@ -138,13 +138,13 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-2xl bg-bw border-2 border-border shadow-shadow p-8 rounded-base relative z-10"
       >
-        <h1 className="text-4xl font-heading text-text mb-2">Resume Roaster</h1>
+        <h1 className="text-4xl font-heading text-text mb-2 font-display">Resume Roaster</h1>
         <p className="text-text mb-8">ts app gives you resume feedback or sum 💔</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div className="flex flex-col space-y-2">
-              <label htmlFor="grade-level" className="text-lg font-medium text-text">
+              <label htmlFor="grade-level" className="text-lg font-medium text-text font-display">
                 What grade u in gng 🙏
               </label>
               <Select value={gradeLevel} onValueChange={setGradeLevel}>
@@ -161,7 +161,7 @@ export default function Home() {
             </div>
 
             <div>
-              <label className="block text-sm font-base text-text mb-2">
+              <label className="block text-sm font-base text-text mb-2 font-display">
                 pls put ur resume here 🤑
               </label>
               <div className="relative">
@@ -188,7 +188,7 @@ export default function Home() {
           </div>
 
           <div>
-            <label className="block text-sm font-base text-text mb-2">
+            <label className="block text-sm font-base text-text mb-2 font-display">
               career goals here (1 sentence is enough)
             </label>
             <Input
