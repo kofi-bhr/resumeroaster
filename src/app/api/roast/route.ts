@@ -152,19 +152,16 @@ function extractJSON(text: string): string {
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const email = formData.get('email') as string;
     const resumeFile = formData.get('resume') as File | null;
     const careerGoals = formData.get('careerGoals') as string;
 
     console.log('Received request with:', { 
-      email, 
       hasResumeFile: !!resumeFile,
       careerGoals 
     });
 
-    if (!email || !resumeFile || !careerGoals) {
+    if (!resumeFile || !careerGoals) {
       console.log('Missing required fields:', { 
-        hasEmail: !!email,
         hasResumeFile: !!resumeFile,
         hasCareerGoals: !!careerGoals
       });

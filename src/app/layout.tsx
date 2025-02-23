@@ -9,8 +9,11 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: 'Resume Roaster',
-  description: 'Get brutally honest feedback about your professional presence',
+  title: 'Resumé Roaster by Kofi',
+  description: 'Resumé feedback. Made with <3 by Kofi :)',
+  icons: {
+    icon: '/favicon.png',
+  },
 };
 
 export default function RootLayout({

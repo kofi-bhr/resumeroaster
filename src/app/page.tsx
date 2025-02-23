@@ -9,7 +9,6 @@ import { Upload } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function Home() {
-  const [email, setEmail] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [careerGoals, setCareerGoals] = useState('');
   const [gradeLevel, setGradeLevel] = useState<string>("Freshman");
@@ -19,16 +18,16 @@ export default function Home() {
 
   // Loading messages array
   const loadingMessages: Array<string | ((filename: string) => string)> = [
-    (filename: string) => `Opening ${filename}... this should be good...`,
-    "Analyzing activities... or lack thereof...",
-    "Hmm... I'm not a fan of the formatting...",
-    "Pretty good for a high schooler... I guess...",
-    "Wow, I'm impressed... by how much padding there is",
-    "They're definitely lying about these achievements...",
-    "Is this really all true? Let me fact check...",
-    "Running it through the embellishment detector...",
-    "Comparing to Harvard admits... oh dear...",
-    "Calculating chances of success... error: divide by zero",
+    (filename: string) => `Opening ${filename}... this BETTER be good...`,
+    "this person might be cooked chat...",
+    "dawg you are NOT locked in 😭🙏🙏...",
+    "eh pretty good for a high schooler ig...",
+    "just put the fries in the bag gng 😭😭...",
+    "u are definitely lying about these achievements...",
+    "let me fact check ts...",
+    "ts pmo ts pmo ts pmo ts pmo ts pmo ts pmo...",
+    "斯基比迪厕所...",
+    "XIAOHONGSHU...",
   ];
 
   useEffect(() => {
@@ -47,16 +46,8 @@ export default function Home() {
     }
   }, [isLoading, file]);
 
-  const validateEmail = (email: string) => {
-    return email.toLowerCase().endsWith('@friendsbalt.org');
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateEmail(email)) {
-      alert('Please use your @friendsbalt.org email address');
-      return;
-    }
 
     if (!file) {
       alert('Please provide a resume');
@@ -69,7 +60,6 @@ export default function Home() {
 
     try {
       const formData = new FormData();
-      formData.append('email', email);
       formData.append('resume', file);
       formData.append('careerGoals', careerGoals);
       formData.append('gradeLevel', gradeLevel);
@@ -105,7 +95,7 @@ export default function Home() {
       router.push('/results');
     } catch (error) {
       console.error('Submission error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+      const errorMessage = error instanceof Error ? error.message : 'TS pmo 💔 js try again gng';
       alert(errorMessage);
     } finally {
       setIsLoading(false);
@@ -148,27 +138,14 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-2xl bg-bw border-2 border-border shadow-shadow p-8 rounded-base relative z-10"
       >
-        <h1 className="text-4xl font-heading text-text mb-2">Resume Roaster 🔥</h1>
-        <p className="text-text mb-8">Get brutally honest feedback about your professional presence</p>
+        <h1 className="text-4xl font-heading text-text mb-2">Resume Roaster</h1>
+        <p className="text-text mb-8">ts app gives you resume feedback or sum 💔</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-base text-text mb-2">
-              School Email
-            </label>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your.name@friendsbalt.org"
-              required
-            />
-          </div>
-
           <div className="space-y-4">
             <div className="flex flex-col space-y-2">
               <label htmlFor="grade-level" className="text-lg font-medium text-text">
-                Grade Level
+                What grade u in gng 🙏
               </label>
               <Select value={gradeLevel} onValueChange={setGradeLevel}>
                 <SelectTrigger className="w-full bg-white border-2 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
@@ -185,7 +162,7 @@ export default function Home() {
 
             <div>
               <label className="block text-sm font-base text-text mb-2">
-                Upload Resume (PDF)
+                pls put ur resume here 🤑
               </label>
               <div className="relative">
                 <label 
@@ -194,7 +171,7 @@ export default function Home() {
                 >
                   <div className="flex flex-col items-center">
                     <Upload className="w-8 h-8 text-text" />
-                    <p className="mt-2 text-sm text-text font-base">Drop your resume here or click to browse</p>
+                    <p className="mt-2 text-sm text-text font-base">ig you can js drag or click fr</p>
                     {file && <p className="mt-1 text-sm text-text/70">{file.name}</p>}
                   </div>
                 </label>
@@ -212,12 +189,12 @@ export default function Home() {
 
           <div>
             <label className="block text-sm font-base text-text mb-2">
-              1-Sentence Career Goals
+              career goals here (1 sentence is enough)
             </label>
             <Input
               value={careerGoals}
               onChange={(e) => setCareerGoals(e.target.value)}
-              placeholder="I'm looking for internships in startups and Venture Capital before college"
+              placeholder="uh im looking for internships in Finance before college applications fr"
               required
             />
           </div>
@@ -233,7 +210,7 @@ export default function Home() {
                 <span className="ml-2 animate-bounce">🤔</span>
               </span>
             ) : (
-              'Roast Me 🔥'
+              'js roast me gng 💔'
             )}
           </Button>
         </form>
