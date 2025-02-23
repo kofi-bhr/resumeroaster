@@ -5,7 +5,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-15.1-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
-[![Google Gemini](https://img.shields.io/badge/AI-Google_Gemini-blue?style=flat-square)](https://deepmind.google/technologies/gemini/)
+[![Google Gemini](https://img.shields.io/badge/Google%20Gemini-blue?logo=googlegemini&logoColor=fff)](https://blog.google/technology/google-deepmind/google-gemini-ai-update-december-2024/#ceo-message)
 
 ## 🚀 Features
 
