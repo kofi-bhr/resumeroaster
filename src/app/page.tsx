@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ export default function Home() {
   const router = useRouter();
 
   // Loading messages array
-  const loadingMessages: Array<string | ((filename: string) => string)> = [
+  const loadingMessages = useMemo(() => [
     (filename: string) => `Opening ${filename}... this BETTER be good...`,
     "this person might be cooked chat...",
     "dawg you are NOT locked in 😭🙏🙏...",
@@ -28,7 +28,7 @@ export default function Home() {
     "ts pmo ts pmo ts pmo ts pmo ts pmo ts pmo...",
     "斯基比迪厕所...",
     "XIAOHONGSHU...",
-  ];
+  ], []); // Empty dependency array since these messages never change
 
   useEffect(() => {
     if (isLoading) {
@@ -44,7 +44,7 @@ export default function Home() {
 
       return () => clearInterval(interval);
     }
-  }, [isLoading, file]);
+  }, [isLoading, file, loadingMessages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

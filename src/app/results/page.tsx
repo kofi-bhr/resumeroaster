@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ResumeRoastResponse {
   studentInfo: {
@@ -284,7 +283,7 @@ export default function Results() {
                 <p className="text-text/80">
                   {feedback.focus.hasSpike 
                     ? "You have a clear focus in your activities and experiences." 
-                    : "Your interests and activities are scattered. Consider developing a stronger focus."}
+                    : "Your interests and activities are a bit scattered. Consider developing a stronger focus."}
                 </p>
               </div>
 

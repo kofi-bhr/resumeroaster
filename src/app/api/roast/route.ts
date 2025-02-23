@@ -22,7 +22,7 @@ You must output ONLY valid JSON matching this exact structure. Do not include an
     "lastName": "string (extract from resume)",
     "schoolName": "string (extract from resume)",
     "graduationYear": "number (extract from resume, e.g. 2025)",
-    "gradeLevel": "string (one of: Freshman, Sophomore, Junior, Senior - infer from graduation year)"
+    "gradeLevel": "string (one of: Freshman, Sophomore, Junior, Senior - this is given to you)"
   },
   "roast": "string (a specific, biting headline based on actual resume content)",
   "scores": {
@@ -128,7 +128,7 @@ interface ResumeRoastResponse {
 const model = genAI.getGenerativeModel({
   model: "gemini-2.0-pro-exp-02-05",
   generationConfig: {
-    temperature: 0.9,
+    temperature: 0,
     topK: 64,
     topP: 0.95,
     maxOutputTokens: 8192,
@@ -154,16 +154,19 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const resumeFile = formData.get('resume') as File | null;
     const careerGoals = formData.get('careerGoals') as string;
+    const gradeLevel = formData.get('gradeLevel') as string;
 
     console.log('Received request with:', { 
       hasResumeFile: !!resumeFile,
-      careerGoals 
+      careerGoals,
+      gradeLevel 
     });
 
-    if (!resumeFile || !careerGoals) {
+    if (!resumeFile || !careerGoals || !gradeLevel) {
       console.log('Missing required fields:', { 
         hasResumeFile: !!resumeFile,
-        hasCareerGoals: !!careerGoals
+        hasCareerGoals: !!careerGoals,
+        hasGradeLevel: !!gradeLevel
       });
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
         status: 400,
@@ -215,7 +218,7 @@ export async function POST(req: NextRequest) {
     }
 
     const prompt = `
-    Please analyze the following resume for a high school student and provide detailed feedback.
+    Please analyze the following resume for a high school ${gradeLevel} and provide detailed feedback.
     Your response must be valid JSON wrapped in code fences (\`\`\`json).
     Do not include any other text or explanations outside the JSON.
     
@@ -223,7 +226,7 @@ export async function POST(req: NextRequest) {
     ${resumeText}
     ---END-RESUME---
     
-    Career Goals: ${careerGoals}`;
+    Career Goals (use this to frame your feedback): ${careerGoals}`;
 
     try {
       console.log('Calling Gemini API...');
