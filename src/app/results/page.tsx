@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ResumeRoastResponse } from '../api/shared/feedback-store';
+import { ScoreTooltip, tooltipContent } from '@/components/score-tooltip';
 
 const CircularProgress = ({ value }: { value: number }) => {
   const circumference = 2 * Math.PI * 75;
@@ -122,14 +123,14 @@ export default function Results() {
             <div className="flex flex-col items-center">
               {/* Title and score */}
               <div className="w-full text-center">
-                <h2 className="text-2xl font-bold text-text mb-1 font-display">Overall Score</h2>
+                <h2 className="text-2xl font-bold text-text mb-1">Overall Score</h2>
                 <div className="-mt-2 mb-2">
                   <CircularProgress value={overallScore} />
                 </div>
               </div>
 
               <div className="text-center -mt-6 mb-8">
-                <h1 className="text-2xl font-bold text-text font-display">{feedback.studentInfo.firstName} {feedback.studentInfo.lastName}</h1>
+                <h1 className="text-2xl font-bold text-text">{feedback.studentInfo.firstName} {feedback.studentInfo.lastName}</h1>
                 <p className="text-text/80">{feedback.studentInfo.schoolName}</p>
                 <p className="text-text/80">Class of {feedback.studentInfo.graduationYear}</p>
                 <p className="text-text/80">{feedback.studentInfo.gradeLevel}</p>
@@ -139,14 +140,17 @@ export default function Results() {
                 {/* Academic scores section */}
                 <div className="space-y-2 border-2 p-4 rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-text font-display">Academic</span>
+                    <span className="text-sm font-medium text-text">Academic</span>
                     <span className="text-sm font-bold text-text">{feedback.scores.academic.overall}%</span>
                   </div>
                   <Progress value={feedback.scores.academic.overall} className="h-2" />
                   <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3">
                     {Object.entries(feedback.scores.academic.subscores).map(([key, value]) => (
                       <div key={key} className="text-sm border-b border-border/50 pb-1">
-                        <span className="text-text/80">{simplifyCategory(key)}</span>
+                        <span className="text-text/80">
+                          {simplifyCategory(key)}
+                          <ScoreTooltip scoreKey={key} />
+                        </span>
                         <span className="float-right font-medium text-text">{value === 100 || value === 0 ? 'N/A' : `${value}%`}</span>
                       </div>
                     ))}
@@ -155,14 +159,17 @@ export default function Results() {
                 {/* Experience scores section */}
                 <div className="space-y-2 border-2 p-4 rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-text font-display">Experience</span>
+                    <span className="text-sm font-medium text-text">Experience</span>
                     <span className="text-sm font-bold text-text">{feedback.scores.experience.overall}%</span>
                   </div>
                   <Progress value={feedback.scores.experience.overall} className="h-2" />
                   <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-3">
                     {Object.entries(feedback.scores.experience.subscores).map(([key, value]) => (
                       <div key={key} className="text-sm border-b border-border/50 pb-1">
-                        <span className="text-text/80">{simplifyCategory(key)}</span>
+                        <span className="text-text/80">
+                          {simplifyCategory(key)}
+                          <ScoreTooltip scoreKey={key} />
+                        </span>
                         <span className="float-right font-medium text-text">{value === 100 || value === 0 ? 'N/A' : `${value}%`}</span>
                       </div>
                     ))}
@@ -171,7 +178,10 @@ export default function Results() {
                 {/* Focus scores section */}
                 <div className="space-y-2 border-2 p-4 rounded-lg">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-text font-display">Focus</span>
+                    <span className="text-sm font-medium text-text">
+                      Focus
+                      <ScoreTooltip scoreKey="focus" />
+                    </span>
                     <span className="text-sm font-bold text-text">{feedback.focus.score}%</span>
                   </div>
                   <Progress value={feedback.focus.score} className="h-2" />
@@ -184,12 +194,12 @@ export default function Results() {
           <Card className="col-span-1 md:col-span-2 bg-white border-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
             <div className="p-6 space-y-8">
               <div>
-                <h2 className="text-2xl font-bold text-text mb-4 font-display">The Roast 🔥</h2>
+                <h2 className="text-2xl font-bold text-text mb-4">The Roast 🔥</h2>
                 <p className="text-xl font-semibold text-text italic">{feedback.roast}</p>
               </div>
 
               <div>
-                <h2 className="text-2xl font-bold text-text mb-4 font-display">Focus Areas</h2>
+                <h2 className="text-2xl font-bold text-text mb-4">Focus Areas</h2>
                 <div className="flex gap-2 flex-wrap mb-4">
                   {feedback.focus.areas.map((area) => (
                     <Badge key={area} variant="default">{area}</Badge>
@@ -203,12 +213,12 @@ export default function Results() {
               </div>
 
               <div>
-                <h2 className="text-2xl font-bold text-text mb-4 font-display">Notes</h2>
+                <h2 className="text-2xl font-bold text-text mb-4">Notes</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {feedback.notes.map((note, index) => (
                     <Card key={index} className="p-4 bg-white border-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                       <Badge variant="default" className="mb-2">{note.category}</Badge>
-                      <h3 className="text-lg font-bold text-text mb-2 font-display">{note.title}</h3>
+                      <h3 className="text-lg font-bold text-text mb-2">{note.title}</h3>
                       <p className="text-text/80">{note.description}</p>
                     </Card>
                   ))}
