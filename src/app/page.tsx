@@ -76,22 +76,17 @@ export default function Home() {
       }
 
       if (!data.success || !data.feedback) {
-        throw new Error(data.error || 'Invalid response from server');
+        throw new Error('Invalid response from server');
       }
 
-      // Store the feedback in localStorage for the results page
-      localStorage.setItem('resumeRoastFeedback', JSON.stringify({
-        ...data.feedback,
-        studentInfo: {
-          ...data.feedback.studentInfo,
-          gradeLevel,
-        },
-      }));
+      // Store the complete feedback object in localStorage
+      localStorage.setItem('resumeRoastFeedback', JSON.stringify(data.feedback));
+      console.log('Stored feedback in localStorage:', data.feedback);
       
-      // Add a small delay before navigation to ensure localStorage is updated
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Add a longer delay before navigation to ensure localStorage is updated
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Navigate to results
+      // Navigate to results page
       router.push('/results');
     } catch (error) {
       console.error('Submission error:', error);

@@ -6,53 +6,7 @@ import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-
-interface ResumeRoastResponse {
-  studentInfo: {
-    firstName: string;
-    lastName: string;
-    schoolName: string;
-    graduationYear: number;
-    gradeLevel: "Freshman" | "Sophomore" | "Junior" | "Senior";
-  };
-  roast: string;
-  scores: {
-    academic: {
-      overall: number;
-      subscores: {
-        gpaPresentation: number;
-        courseLoad: number;
-        awardsHonors: number;
-        academicProjects: number;
-        testScores: number;
-        classRank: number;
-        academicGrowth: number;
-      };
-    };
-    experience: {
-      overall: number;
-      subscores: {
-        descriptionQuality: number;
-        impactMetrics: number;
-        duration: number;
-        progression: number;
-        relevance: number;
-        responsibilityLevel: number;
-        initiativeShown: number;
-      };
-    };
-  };
-  focus: {
-    hasSpike: boolean;
-    score: number;
-    areas: string[];
-  };
-  notes: Array<{
-    category: "suggestion" | "fix" | "problem" | "issue" | "advice";
-    title: string;
-    description: string;
-  }>;
-}
+import { ResumeRoastResponse } from '../api/shared/feedback-store';
 
 const CircularProgress = ({ value }: { value: number }) => {
   const circumference = 2 * Math.PI * 75;
@@ -131,68 +85,29 @@ const simplifyCategory = (key: string): string => {
 
 export default function Results() {
   const [feedback, setFeedback] = useState<ResumeRoastResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    let retryCount = 0;
-    const maxRetries = 3;
-    const retryInterval = 500; // 500ms between retries
-
-    const tryLoadFeedback = () => {
-      try {
-        // Try to get feedback from localStorage
-        const storedFeedback = localStorage.getItem('resumeRoastFeedback');
-        if (!storedFeedback) {
-          if (retryCount < maxRetries) {
-            retryCount++;
-            setTimeout(tryLoadFeedback, retryInterval);
-            return;
-          }
-          throw new Error('No feedback found. Please submit your resume first.');
-        }
-
-        const parsedFeedback = JSON.parse(storedFeedback) as ResumeRoastResponse;
-        setFeedback(parsedFeedback);
-      } catch (err) {
-        console.error('Error loading feedback:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load feedback');
-        // Redirect back to home after a delay if there's no feedback
-        setTimeout(() => router.push('/'), 2000);
+    try {
+      const storedFeedback = localStorage.getItem('resumeRoastFeedback');
+      if (!storedFeedback) {
+        router.push('/');
+        return;
       }
-    };
-
-    tryLoadFeedback();
+      setFeedback(JSON.parse(storedFeedback));
+    } catch (err) {
+      console.error('Error loading feedback:', err);
+      router.push('/');
+    }
   }, [router]);
 
-  // Only clear localStorage after successful render
-  useEffect(() => {
-    if (feedback) {
-      localStorage.removeItem('resumeRoastFeedback');
-    }
-  }, [feedback]);
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-foreground mb-4">Error</h2>
-          <p className="text-foreground/80">{error}</p>
-          <p className="text-foreground/60 mt-2">Redirecting to home...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (!feedback) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
+    return null;
   }
 
-  const overallScore = Math.round((feedback.scores.academic.overall + feedback.scores.experience.overall) / 2);
+  const overallScore = Math.round(
+    ((feedback.scores.academic.overall + feedback.scores.experience.overall) / 2)
+  );
 
   return (
     <main className="min-h-screen bg-bg p-4 md:p-8">

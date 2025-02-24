@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
 import pdfParse from 'pdf-parse/lib/pdf-parse.js';
+import { ResumeRoastResponse } from '../shared/feedback-store';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -77,54 +78,6 @@ REQUIREMENTS:
 9. Infer grade level from graduation year (2024=Senior, 2025=Junior, etc.)
 10. Output ONLY valid JSON - no other text`;
 
-// Add interface for the response type
-interface ResumeRoastResponse {
-  studentInfo: {
-    firstName: string;
-    lastName: string;
-    schoolName: string;
-    graduationYear: number;
-    gradeLevel: "Freshman" | "Sophomore" | "Junior" | "Senior";
-  };
-  roast: string;
-  scores: {
-    academic: {
-      overall: number;
-      subscores: {
-        gpaPresentation: number;
-        courseLoad: number;
-        awardsHonors: number;
-        academicProjects: number;
-        testScores: number;
-        classRank: number;
-        academicGrowth: number;
-      };
-    };
-    experience: {
-      overall: number;
-      subscores: {
-        descriptionQuality: number;
-        impactMetrics: number;
-        duration: number;
-        progression: number;
-        relevance: number;
-        responsibilityLevel: number;
-        initiativeShown: number;
-      };
-    };
-  };
-  focus: {
-    hasSpike: boolean;
-    score: number;
-    areas: string[];
-  };
-  notes: Array<{
-    category: "suggestion" | "fix" | "problem" | "issue" | "advice";
-    title: string;
-    description: string;
-  }>;
-}
-
 const model = genAI.getGenerativeModel({
   model: "gemini-2.0-pro-exp-02-05",
   generationConfig: {
@@ -135,87 +88,17 @@ const model = genAI.getGenerativeModel({
   },
 });
 
-// In-memory storage (in a real app, this would be a database)
-export let lastFeedback: ResumeRoastResponse | null = null;
-
-// Helper function to extract JSON from possible code fence
-function extractJSON(text: string): string {
-  // Try to find JSON between code fences
-  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (jsonMatch) {
-    return jsonMatch[1].trim();
-  }
-  // If no code fence, try to parse the whole text
-  return text.trim();
-}
-
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const resumeFile = formData.get('resume') as File | null;
+    const resumeFile = formData.get('resume') as File;
     const careerGoals = formData.get('careerGoals') as string;
     const gradeLevel = formData.get('gradeLevel') as string;
 
-    console.log('Received request with:', { 
-      hasResumeFile: !!resumeFile,
-      careerGoals,
-      gradeLevel 
-    });
-
-    if (!resumeFile || !careerGoals || !gradeLevel) {
-      console.log('Missing required fields:', { 
-        hasResumeFile: !!resumeFile,
-        hasCareerGoals: !!careerGoals,
-        hasGradeLevel: !!gradeLevel
-      });
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400,
-      });
-    }
-
-    let resumeText = '';
-    if (resumeFile) {
-      try {
-        console.log('Starting PDF processing...');
-        // Convert File to ArrayBuffer
-        const bytes = await resumeFile.arrayBuffer();
-        console.log('File converted to ArrayBuffer, size:', bytes.byteLength);
-        
-        // Convert ArrayBuffer to Buffer using Buffer.from
-        const buffer = Buffer.from(new Uint8Array(bytes));
-        console.log('ArrayBuffer converted to Buffer, size:', buffer.length);
-        
-        // Parse PDF with better error handling
-        try {
-          console.log('Starting PDF parsing...');
-          const pdfData = await pdfParse(buffer);
-          console.log('PDF parsed successfully');
-          resumeText = pdfData.text;
-          console.log('Text extracted, length:', resumeText.length);
-          
-          // Validate that we got some text
-          if (!resumeText || resumeText.trim().length === 0) {
-            console.log('No text found in PDF');
-            return NextResponse.json(
-              { error: 'Could not extract text from PDF. The file might be empty or corrupted.' },
-              { status: 400 }
-            );
-          }
-        } catch (pdfError) {
-          console.error('PDF parsing error:', pdfError);
-          return NextResponse.json(
-            { error: 'Failed to parse PDF file. Please ensure it is a valid PDF document.' },
-            { status: 400 }
-          );
-        }
-      } catch (error) {
-        console.error('Buffer conversion error:', error);
-        return NextResponse.json(
-          { error: 'Failed to process the uploaded file.' },
-          { status: 400 }
-        );
-      }
-    }
+    // Parse PDF
+    const buffer = Buffer.from(await resumeFile.arrayBuffer());
+    const pdfData = await pdfParse(buffer);
+    const resumeText = pdfData.text;
 
     const prompt = `
     Please analyze the following resume for a high school ${gradeLevel} and provide detailed feedback.
@@ -228,74 +111,127 @@ export async function POST(req: NextRequest) {
     
     Career Goals (use this to frame your feedback): ${careerGoals}`;
 
-    try {
-      console.log('Calling Gemini API...');
-      const result = await model.generateContent([
-        { text: SYSTEM_PROMPT },
-        { text: prompt }
-      ]);
-      console.log('Received response from Gemini');
-      const response = await result.response;
-      const text = response.text();
-      console.log('Extracted text from response, length:', text.length);
-      
+    // Get AI response
+    const result = await model.generateContent([
+      { text: SYSTEM_PROMPT },
+      { text: prompt }
+    ]);
+    const response = await result.response;
+    const text = response.text();
+    
+    // Debug logging
+    console.log('Raw AI response:', text);
+    
+    // Extract and parse JSON
+    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    let jsonText = '';
+    
+    if (jsonMatch) {
+      jsonText = jsonMatch[1].trim();
+    } else {
+      // Try to find JSON without code fences
       try {
-        console.log('Raw response:', text);
-        // Extract JSON from possible code fence
-        const jsonText = extractJSON(text);
-        console.log('Extracted JSON text:', jsonText);
-        
-        const parsedResponse = JSON.parse(jsonText) as ResumeRoastResponse;
-        console.log('Successfully parsed response');
-        
-        // Store the feedback directly
-        lastFeedback = parsedResponse;
-        console.log('Stored feedback in memory');
-
-        // Set proper content type and return
-        return new NextResponse(JSON.stringify({ 
-          success: true, 
-          feedback: parsedResponse 
-        }), {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-      } catch (parseError) {
-        console.error('Failed to parse AI response:', parseError);
-        return new NextResponse(JSON.stringify({
-          error: 'Failed to parse AI response. The model returned invalid JSON.',
-          details: parseError instanceof Error ? parseError.message : 'Unknown parsing error'
-        }), {
-          status: 500,
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-      }
-    } catch (aiError) {
-      console.error('AI Error:', aiError);
-      return new NextResponse(JSON.stringify({
-        error: 'Failed to generate feedback from AI.',
-        details: aiError instanceof Error ? aiError.message : 'Unknown AI error'
-      }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
+        JSON.parse(text.trim()); // Test if the entire response is valid JSON
+        jsonText = text.trim();
+      } catch {
+        // If not valid JSON, try to find JSON-like structure
+        const possibleJson = text.match(/\{[\s\S]*\}/);
+        if (possibleJson) {
+          jsonText = possibleJson[0].trim();
+        } else {
+          throw new Error('Could not extract valid JSON from AI response');
         }
+      }
+    }
+    
+    console.log('Extracted JSON text:', jsonText);
+    
+    let feedback: ResumeRoastResponse;
+    try {
+      const parsed = JSON.parse(jsonText);
+      
+      // Ensure the structure is correct by explicitly constructing the object
+      feedback = {
+        studentInfo: parsed.studentInfo,
+        roast: parsed.roast,
+        scores: parsed.scores,
+        focus: parsed.focus || parsed.scores?.focus,  // Try both locations
+        notes: parsed.notes || parsed.scores?.notes   // Try both locations
+      };
+    } catch (error) {
+      console.error('JSON parse error:', error);
+      return NextResponse.json({ 
+        error: 'Failed to parse AI response as JSON' 
+      }, { 
+        status: 500 
       });
     }
-  } catch (error) {
-    console.error('Error processing request:', error);
-    return new NextResponse(JSON.stringify({
-      error: 'Failed to process request',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
+    
+    console.log('Parsed feedback object:', feedback);
+
+    // Detailed validation
+    const missingFields = [];
+    
+    if (!feedback.studentInfo) missingFields.push('studentInfo');
+    else {
+      if (!feedback.studentInfo.firstName) missingFields.push('studentInfo.firstName');
+      if (!feedback.studentInfo.lastName) missingFields.push('studentInfo.lastName');
+      if (!feedback.studentInfo.schoolName) missingFields.push('studentInfo.schoolName');
+      if (!feedback.studentInfo.graduationYear) missingFields.push('studentInfo.graduationYear');
+      if (!feedback.studentInfo.gradeLevel) missingFields.push('studentInfo.gradeLevel');
+    }
+    
+    if (!feedback.roast) missingFields.push('roast');
+    
+    if (!feedback.scores) missingFields.push('scores');
+    else {
+      if (!feedback.scores.academic) missingFields.push('scores.academic');
+      if (!feedback.scores.experience) missingFields.push('scores.experience');
+    }
+    
+    if (!feedback.focus) missingFields.push('focus');
+    else {
+      if (typeof feedback.focus.hasSpike !== 'boolean') missingFields.push('focus.hasSpike');
+      if (typeof feedback.focus.score !== 'number') missingFields.push('focus.score');
+      if (!Array.isArray(feedback.focus.areas)) missingFields.push('focus.areas');
+    }
+    
+    if (!Array.isArray(feedback.notes)) missingFields.push('notes');
+    else {
+      feedback.notes.forEach((note, index) => {
+        if (!note.category) missingFields.push(`notes[${index}].category`);
+        if (!note.title) missingFields.push(`notes[${index}].title`);
+        if (!note.description) missingFields.push(`notes[${index}].description`);
+      });
+    }
+    
+    if (missingFields.length > 0) {
+      console.error('Missing fields:', missingFields);
+      return NextResponse.json({ 
+        error: `AI returned incomplete data structure. Missing fields: ${missingFields.join(', ')}` 
+      }, { 
+        status: 500 
+      });
+    }
+
+    // Store in localStorage on client side
+    return NextResponse.json({ 
+      success: true, 
+      feedback: {
+        studentInfo: feedback.studentInfo,
+        roast: feedback.roast,
+        scores: feedback.scores,
+        focus: feedback.focus,
+        notes: feedback.notes
       }
+    });
+
+  } catch (error) {
+    console.error('Error:', error);
+    return NextResponse.json({ 
+      error: 'Failed to process resume' 
+    }, { 
+      status: 500 
     });
   }
 } 
