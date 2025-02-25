@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ResumeRoastResponse } from '../api/shared/feedback-store';
-import { ScoreTooltip, tooltipContent } from '@/components/score-tooltip';
+import { ScoreTooltip } from '@/components/score-tooltip';
 
 const CircularProgress = ({ value }: { value: number }) => {
   const circumference = 2 * Math.PI * 75;

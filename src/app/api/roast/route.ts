@@ -76,7 +76,11 @@ REQUIREMENTS:
 7. The roast headline must be specific to their resume content and actually sting
 8. Extract student info carefully from the resume text
 9. Infer grade level from graduation year (2024=Senior, 2025=Junior, etc.)
-10. Output ONLY valid JSON - no other text`;
+10. Output ONLY valid JSON - no other text
+
+NOTE:
+- URLs will not be present in the resume text; do not penalize applicants for not having them. However, you may add a note to the effect of "I can't see links, but it looks like you don't have 'em. If I'm right, add them in." but in your destinct style ;)
+`;
 
 const model = genAI.getGenerativeModel({
   model: "gemini-2.0-pro-exp-02-05",
