@@ -69,10 +69,16 @@ export default function Home() {
         body: formData,
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('JSON parsing error:', jsonError);
+        throw new Error('Failed to parse server response as JSON. Please try again.');
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || `Server error: ${response.status}`);
+        throw new Error(data?.error || `Server error: ${response.status}`);
       }
 
       if (!data.success || !data.feedback) {

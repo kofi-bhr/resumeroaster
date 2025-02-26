@@ -348,7 +348,11 @@ export async function POST(req: NextRequest) {
             status: 500 
           });
         }
-        throw geminiError;
+        return NextResponse.json({
+          error: 'Unknown error from AI service'
+        }, {
+          status: 500
+        });
       }
 
     } catch (pdfError) {
