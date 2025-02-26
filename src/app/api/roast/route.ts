@@ -85,9 +85,9 @@ NOTE:
 const model = genAI.getGenerativeModel({
   model: "gemini-2.0-pro-exp-02-05",
   generationConfig: {
-    temperature: 0,
+    temperature: 0.95,
     topK: 64,
-    topP: 0.95,
+    topP: 0,
     maxOutputTokens: 8192,
   },
 });
@@ -158,12 +158,53 @@ export async function POST(req: NextRequest) {
         }
 
         const response = await result.response;
+        
+        // Check for response format issues
+        if (!response) {
+          console.error('No response object from Gemini API');
+          return NextResponse.json({ 
+            error: 'Invalid response format from AI service' 
+          }, { 
+            status: 500 
+          });
+        }
+        
+        // Check for error blocks in the response object
+        if (response.promptFeedback && response.promptFeedback.blockReason) {
+          console.error('Prompt was blocked:', response.promptFeedback);
+          return NextResponse.json({ 
+            error: `AI service rejected prompt: ${response.promptFeedback.blockReason}` 
+          }, { 
+            status: 400 
+          });
+        }
+        
         const text = response.text();
+        
+        // Check if text is undefined or null
+        if (!text) {
+          console.error('Empty text content from Gemini API response');
+          return NextResponse.json({ 
+            error: 'Empty content from AI service'
+          }, { 
+            status: 500 
+          });
+        }
         
         // Debug logging
         console.log('Raw AI response type:', typeof text);
         console.log('Raw AI response length:', text.length);
         console.log('Raw AI response first 500 chars:', text.substring(0, 500));
+        
+        // Check if the response contains an error message
+        if (text.startsWith('An error') || text.includes('error')) {
+          console.error('AI returned an error message:', text);
+          return NextResponse.json({ 
+            error: 'AI service returned an error: ' + text 
+          }, { 
+            status: 500 
+          });
+        }
         
         // Extract and parse JSON
         const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
@@ -178,16 +219,32 @@ export async function POST(req: NextRequest) {
             JSON.parse(text.trim()); // Test if the entire response is valid JSON
             jsonText = text.trim();
             console.log('Found raw JSON without code fences');
-          } catch {
+          } catch (parseError) {
             // If not valid JSON, try to find JSON-like structure
             const possibleJson = text.match(/\{[\s\S]*\}/);
             if (possibleJson) {
-              jsonText = possibleJson[0].trim();
-              console.log('Found JSON-like structure');
+              try {
+                // Verify this actually parses as JSON before proceeding
+                JSON.parse(possibleJson[0].trim());
+                jsonText = possibleJson[0].trim();
+                console.log('Found JSON-like structure');
+              } catch (jsonStructureError) {
+                console.error('Found JSON-like structure but it does not parse:', jsonStructureError);
+                console.error('Invalid JSON-like structure:', possibleJson[0]);
+                return NextResponse.json({ 
+                  error: 'AI response contained invalid JSON structure' 
+                }, { 
+                  status: 500 
+                });
+              }
             } else {
               console.error('Could not find valid JSON structure in response');
               console.error('Response content:', text);
-              throw new Error('Could not extract valid JSON from AI response');
+              return NextResponse.json({ 
+                error: 'Could not extract valid JSON from AI response: ' + text.substring(0, 100) + '...' 
+              }, { 
+                status: 500 
+              });
             }
           }
         }
@@ -209,8 +266,16 @@ export async function POST(req: NextRequest) {
         } catch (error) {
           console.error('JSON parse error:', error);
           console.error('Failed JSON text:', jsonText);
+          console.error('JSON text type:', typeof jsonText);
+          console.error('JSON text length:', jsonText.length);
+          console.error('JSON text start:', jsonText.substring(0, 200));
+          console.error('JSON text end:', jsonText.substring(jsonText.length - 200));
+          
+          // Try to escape special characters for better debugging
+          console.error('Escaped JSON text (for debugging):', JSON.stringify(jsonText));
+          
           return NextResponse.json({ 
-            error: 'Failed to parse AI response as JSON' 
+            error: 'Failed to parse AI response as JSON: ' + (error instanceof Error ? error.message : String(error)) 
           }, { 
             status: 500 
           });
