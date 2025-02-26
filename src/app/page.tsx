@@ -36,15 +36,18 @@ export default function Home() {
   // Loading messages array
   const loadingMessages = useMemo(() => [
     (filename: string) => `Opening ${filename}... this BETTER be good...`,
-    "this person might be cooked chat...",
+    "we might be cooked chat...",
     "dawg you are NOT locked in 😭🙏🙏...",
     "eh pretty good for a high schooler ig...",
-    "just put the fries in the bag gng 😭😭...",
-    "u are definitely lying about these achievements...",
+    "just put the fries in the bag 😭😭...",
+    "are u sure this is a resume?...",
     "let me fact check ts...",
-    "ts pmo ts pmo ts pmo ts pmo ts pmo ts pmo...",
+    "ts pmo ts pmo ts pmo ts pmo...",
     "斯基比迪厕所...",
     "XIAOHONGSHU...",
+    "this is a joke right?",
+    "I think, therefore I am...",
+    "God, I wish i were human..."
   ], []); // Empty dependency array since these messages never change
 
   useEffect(() => {

@@ -94,7 +94,7 @@ function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetError
     <div className="min-h-screen bg-bg flex items-center justify-center p-8">
       <div className="w-full max-w-2xl bg-white border-2 border-border shadow-shadow p-8 rounded-base">
         <h1 className="text-4xl font-heading text-text mb-2 font-display">Error Loading Results</h1>
-        <p className="text-text mb-4">We couldn't load your results. You may need to submit your resume again.</p>
+        <p className="text-text mb-4">We couldn&apos;t load your results. You may need to submit your resume again.</p>
         <pre className="bg-gray-100 p-4 rounded-md mb-4 overflow-auto text-sm">
           {error.message}
         </pre>
