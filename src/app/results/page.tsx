@@ -8,6 +8,8 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ResumeRoastResponse } from '../api/shared/feedback-store';
 import { ScoreTooltip } from '@/components/score-tooltip';
+import { ErrorBoundary } from 'react-error-boundary';
+import { Button } from '@/components/ui/button';
 
 const CircularProgress = ({ value }: { value: number }) => {
   const circumference = 2 * Math.PI * 75;
@@ -84,7 +86,29 @@ const simplifyCategory = (key: string): string => {
   return simplifications[key] || key;
 };
 
-export default function Results() {
+// Error fallback component
+function ErrorFallback({ error, resetErrorBoundary }: { error: Error; resetErrorBoundary: () => void }) {
+  const router = useRouter();
+  
+  return (
+    <div className="min-h-screen bg-bg flex items-center justify-center p-8">
+      <div className="w-full max-w-2xl bg-white border-2 border-border shadow-shadow p-8 rounded-base">
+        <h1 className="text-4xl font-heading text-text mb-2 font-display">Error Loading Results</h1>
+        <p className="text-text mb-4">We couldn't load your results. You may need to submit your resume again.</p>
+        <pre className="bg-gray-100 p-4 rounded-md mb-4 overflow-auto text-sm">
+          {error.message}
+        </pre>
+        <div className="flex gap-4">
+          <Button onClick={() => router.push('/')}>Back to Home</Button>
+          <Button onClick={resetErrorBoundary} variant="neutral">Try Again</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main Results component logic
+function ResultsPage() {
   const [feedback, setFeedback] = useState<ResumeRoastResponse | null>(null);
   const router = useRouter();
 
@@ -92,10 +116,25 @@ export default function Results() {
     try {
       const storedFeedback = localStorage.getItem('resumeRoastFeedback');
       if (!storedFeedback) {
+        console.error('No feedback found in localStorage');
         router.push('/');
         return;
       }
-      setFeedback(JSON.parse(storedFeedback));
+      
+      try {
+        const parsedFeedback = JSON.parse(storedFeedback);
+        
+        // Validate the parsed feedback has the expected structure
+        if (!parsedFeedback || !parsedFeedback.studentInfo || !parsedFeedback.scores) {
+          console.error('Invalid feedback structure:', parsedFeedback);
+          throw new Error('Invalid feedback data structure');
+        }
+        
+        setFeedback(parsedFeedback);
+      } catch (parseError) {
+        console.error('Error parsing feedback JSON:', parseError);
+        router.push('/');
+      }
     } catch (err) {
       console.error('Error loading feedback:', err);
       router.push('/');
@@ -103,7 +142,14 @@ export default function Results() {
   }, [router]);
 
   if (!feedback) {
-    return null;
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <Card className="p-6 text-center">
+          <h2 className="text-xl">Loading results...</h2>
+          <p className="text-text/80 mt-2">If nothing loads, please try submitting your resume again.</p>
+        </Card>
+      </div>
+    );
   }
 
   const overallScore = Math.round(
@@ -229,5 +275,17 @@ export default function Results() {
         </motion.div>
       </div>
     </main>
+  );
+}
+
+// Export the wrapped component with error boundary
+export default function Results() {
+  return (
+    <ErrorBoundary 
+      FallbackComponent={ErrorFallback}
+      onReset={() => window.location.reload()}
+    >
+      <ResultsPage />
+    </ErrorBoundary>
   );
 } 

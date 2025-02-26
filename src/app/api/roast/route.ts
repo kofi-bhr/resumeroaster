@@ -93,11 +93,34 @@ const model = genAI.getGenerativeModel({
 });
 
 export async function POST(req: NextRequest) {
+  // Define the cleanup function at the top level
+  let timeoutHandle: NodeJS.Timeout | null = null;
+  const cleanup = () => {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+      timeoutHandle = null;
+    }
+  };
+
   try {
     const formData = await req.formData();
     const resumeFile = formData.get('resume') as File;
     const careerGoals = formData.get('careerGoals') as string;
     const gradeLevel = formData.get('gradeLevel') as string;
+
+    console.log('Request received, starting processing...');
+    console.log('File size:', resumeFile?.size || 'unknown', 'bytes');
+
+    // Initialize a timeout to ensure we respond even if something hangs
+    timeoutHandle = setTimeout(() => {
+      console.error('Function timeout triggered, request took too long');
+      timeoutHandle = null;
+      return NextResponse.json({ 
+        error: 'Processing took too long, please try with a smaller file or simpler resume' 
+      }, { 
+        status: 504 // Gateway Timeout
+      });
+    }, 50000); // 50 second timeout
 
     if (!resumeFile || !careerGoals || !gradeLevel) {
       console.error('Missing required fields:', { 
@@ -105,6 +128,7 @@ export async function POST(req: NextRequest) {
         hasCareerGoals: !!careerGoals, 
         hasGradeLevel: !!gradeLevel 
       });
+      cleanup();
       return NextResponse.json({ 
         error: 'Missing required fields' 
       }, { 
@@ -198,9 +222,9 @@ export async function POST(req: NextRequest) {
         
         // Check if the response contains an error message
         if (text.startsWith('An error') || text.includes('error')) {
-          console.error('AI returned an error message:', text);
+          console.error('AI returned an error message:', text.substring(0, 100));
           return NextResponse.json({ 
-            error: 'AI service returned an error: ' + text 
+            error: 'AI service returned an error: ' + text.substring(0, 100) // Only include first 100 chars for safety
           }, { 
             status: 500 
           });
@@ -328,6 +352,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Store in localStorage on client side
+        cleanup();
         return NextResponse.json({ 
           success: true, 
           feedback: {
@@ -341,6 +366,7 @@ export async function POST(req: NextRequest) {
 
       } catch (geminiError) {
         console.error('Gemini API error:', geminiError);
+        cleanup();
         if (geminiError instanceof Error) {
           return NextResponse.json({ 
             error: `AI service error: ${geminiError.message}` 
@@ -357,6 +383,7 @@ export async function POST(req: NextRequest) {
 
     } catch (pdfError) {
       console.error('PDF processing error:', pdfError);
+      cleanup();
       return NextResponse.json({ 
         error: 'Failed to process PDF file' 
       }, { 
@@ -366,6 +393,10 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('Unhandled error:', error);
+    // Make sure cleanup is called even in the outer error handler
+    if (typeof cleanup === 'function') {
+      cleanup();
+    }
     if (error instanceof Error) {
       return NextResponse.json({ 
         error: `Failed to process resume: ${error.message}` 
