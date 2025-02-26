@@ -219,7 +219,8 @@ export async function POST(req: NextRequest) {
             JSON.parse(text.trim()); // Test if the entire response is valid JSON
             jsonText = text.trim();
             console.log('Found raw JSON without code fences');
-          } catch (parseError) {
+          } catch (e) {
+            void e; // Explicitly void the error to indicate we're not using it
             // If not valid JSON, try to find JSON-like structure
             const possibleJson = text.match(/\{[\s\S]*\}/);
             if (possibleJson) {
